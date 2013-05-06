@@ -1,6 +1,7 @@
-import eveapy
+from apiKeys import apiKeys
+from eveapy import api
 
-acc = eveapy.Account(eveapy.ApiKey("none", "none"))
+acc = api.Account(apiKeys['full'])
 chars = acc.getCharacters()
 
 for char in chars:
