@@ -10,6 +10,7 @@ import xml.etree.ElementTree as et
 ApiKey = namedtuple('ApiKey', ('keyID', 'vCode'))
 Character = namedtuple('Character', ('characterID', 'name', 'corporationName', 'corporationID'))
 AccountStatus = namedtuple('AccountStatus', ('paidUntil', 'createDate', 'logonCount', 'logonMinutes'))
+ApiKeyInfo = namedtuple('ApiKeyInfo', ('accessMask', 'type', 'expires', 'characters'))
 
 class Api(object):
     def __init__(self, cache, apiKey=None, urlBase='https://api.eveonline.com'):
@@ -73,6 +74,16 @@ class Account(object):
         response = self.__api.getResponse('account/AccountStatus.xml.aspx', self.__apiKey)
         status = response.find('result')
         return AccountStatus(**dict((x.tag, x.text) for x in list(status)))
+    
+    def getApiKeyInfo(self):
+        response = self.__api.getResponse('account/APIKeyInfo.xml.aspx ', self.__apiKey)
+        chars = []
+        for char in list(response.find('result/key/rowset')):
+            char.attrib['name'] = char.attrib.pop('characterName') 
+            chars.append(Character(**char.attrib))
+        info = dict(response.find('result/key').attrib)
+        info['characters'] = chars
+        return ApiKeyInfo(**info)
     
 class ApiException(Exception):
     def __init__(self, code, message):

@@ -12,6 +12,9 @@ cache = SmartCache()
 impl = Api(cache)
 acc = Account(impl, apiKeys['full'])
 
+keyInfo = acc.getApiKeyInfo()
+print keyInfo
+
 status = acc.getAccountStatus()
 print status
 
