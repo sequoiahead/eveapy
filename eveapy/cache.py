@@ -1,10 +1,17 @@
+import os
 import pickle
 import shelve
 import time
 
 class SmartCache(object):
-    def __init__(self, path=''):
-        self.__data = shelve.open(path + 'eveapy.api')
+    def __init__(self, path=None):
+        if path is None:
+            path = os.getenv('XDG_CACHE_HOME', '$HOME/.cache/')
+        path = path + 'eveapy/api.cache'
+        d = os.path.dirname(path)
+        if not os.path.exists(d):
+            os.makedirs(d, 0755)
+        self.__data = shelve.open(path)
     
     def __extractMeta(self, response):
         timeStr = response.find('cachedUntil').text

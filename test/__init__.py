@@ -1,6 +1,6 @@
 from apiKeys import apiKeys
 from collections import namedtuple
-from eveapy.api import Api, Account
+from eveapy.api import Api, AccountApi, CharacterApi
 from eveapy.cache import SmartCache
 import eveapy
 import logging
@@ -8,9 +8,10 @@ import os
 
 logging.basicConfig(level=logging.DEBUG)
 
-cache = SmartCache()
+cache = SmartCache('./')
 impl = Api(cache)
-acc = Account(impl, apiKeys['full'])
+acc = AccountApi(impl, apiKeys['full'])
+chrApi = CharacterApi(impl, apiKeys['full'])
 
 keyInfo = acc.getApiKeyInfo()
 print keyInfo
@@ -21,5 +22,11 @@ print status
 chars = acc.getCharacters()
 for char in chars:
     print char
+
+
+sit = chrApi.getSkillInTraining(1851172576)
+print sit
+sit = chrApi.getSkillInTraining(93315844)
+print sit
 
 logging.shutdown()

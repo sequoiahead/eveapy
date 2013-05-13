@@ -11,17 +11,24 @@ ApiKey = namedtuple('ApiKey', ('keyID', 'vCode'))
 Character = namedtuple('Character', ('characterID', 'name', 'corporationName', 'corporationID'))
 AccountStatus = namedtuple('AccountStatus', ('paidUntil', 'createDate', 'logonCount', 'logonMinutes'))
 ApiKeyInfo = namedtuple('ApiKeyInfo', ('accessMask', 'type', 'expires', 'characters'))
+SkillInTraining = namedtuple('SkillInTraining', ('skillInTraining', 'currentTQTime', 'trainingEndTime', 'trainingStartTime',
+                                                 'trainingTypeID', 'trainingStartSP', 'trainingDestinationSP', 'trainingToLevel'))
+
+def nodesListToDict(response, tagName='result'):
+    return dict((x.tag, x.text) for x in list(response.find(tagName)))
 
 class Api(object):
     def __init__(self, cache, apiKey=None, urlBase='https://api.eveonline.com'):
+        self.__logger = logging.getLogger(fqcn(self))
         self.urlBase = urlBase;
         if apiKey is not None and not isinstance(apiKey, ApiKey):
             raise TypeError("apiKey object must be of type %s", fqcn(ApiKey))
         self.apiKey = apiKey
+        if cache is None:
+            self.__cache = SmartCache()
         if not isinstance(cache, SmartCache):
             raise TypeError("cache object must be of type %s.%s", fqcn(SmartCache))
         self.__cache = cache
-        self.__logger = logging.getLogger(fqcn(self))
         
     def getResponse(self, urlApi, reqData=None, bypassCache=False):
         req = self.__prepareRequest(urlApi, reqData)
@@ -57,7 +64,7 @@ class Api(object):
         req.add_data(urllib.urlencode(reqDataFull))
         return req
         
-class Account(object):
+class AccountApi(object):
     def __init__(self, api, apiKey):
         self.__api = api
         self.__apiKey = apiKey
@@ -72,8 +79,7 @@ class Account(object):
     
     def getAccountStatus(self):
         response = self.__api.getResponse('account/AccountStatus.xml.aspx', self.__apiKey)
-        status = response.find('result')
-        return AccountStatus(**dict((x.tag, x.text) for x in list(status)))
+        return AccountStatus(**nodesListToDict(response))
     
     def getApiKeyInfo(self):
         response = self.__api.getResponse('account/APIKeyInfo.xml.aspx ', self.__apiKey)
@@ -84,6 +90,22 @@ class Account(object):
         info = dict(response.find('result/key').attrib)
         info['characters'] = chars
         return ApiKeyInfo(**info)
+    
+class CharacterApi(object):
+    def __init__(self, api, apiKey):
+        self.__api = api
+        self.__apiKey = apiKey
+        
+    def getSkillInTraining(self, characterID):
+        reqData = self.__apiKey._asdict()
+        reqData['characterID'] = characterID
+        response = self.__api.getResponse('char/SkillInTraining.xml.aspx', reqData)
+        try:
+            isTraining = int(response.find('result/skillInTraining').text)
+        except ValueError:
+            raise ApiException(2000, "Unexpected value")
+        return SkillInTraining(**nodesListToDict(response)) if isTraining > 0 else None
+             
     
 class ApiException(Exception):
     def __init__(self, code, message):
