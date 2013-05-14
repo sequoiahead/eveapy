@@ -8,11 +8,12 @@ import urllib2
 import xml.etree.ElementTree as et
 
 ApiKey = namedtuple('ApiKey', ('keyID', 'vCode'))
-Character = namedtuple('Character', ('characterID', 'name', 'corporationName', 'corporationID'))
-AccountStatus = namedtuple('AccountStatus', ('paidUntil', 'createDate', 'logonCount', 'logonMinutes'))
+CharacterInfo = namedtuple('CharacterInfo', ('characterID', 'name', 'corporationName', 'corporationID'))
+AccountStatusInfo = namedtuple('AccountStatusInfo', ('paidUntil', 'createDate', 'logonCount', 'logonMinutes'))
 ApiKeyInfo = namedtuple('ApiKeyInfo', ('accessMask', 'type', 'expires', 'characters'))
-SkillInTraining = namedtuple('SkillInTraining', ('skillInTraining', 'currentTQTime', 'trainingEndTime', 'trainingStartTime',
+SkillInTrainingInfo = namedtuple('SkillInTrainingInfo', ('skillInTraining', 'currentTQTime', 'trainingEndTime', 'trainingStartTime',
                                                  'trainingTypeID', 'trainingStartSP', 'trainingDestinationSP', 'trainingToLevel'))
+SkillQueueItem = namedtuple('SkillQueueItem', ('queuePosition', 'typeID', 'level', 'startSP', 'endSP', 'startTime', 'endTime'))
 
 def nodesListToDict(response, tagName='result'):
     return dict((x.tag, x.text) for x in list(response.find(tagName)))
@@ -70,23 +71,23 @@ class AccountApi(object):
         self.__apiKey = apiKey
     
     def getCharacters(self):
-        response = self.__api.getResponse('account/characters.xml.aspx', self.__apiKey)
+        response = self.__api.getResponse('account/Characters.xml.aspx', self.__apiKey)
         
         charsList = []
         for char in list(response.find('result/rowset')):
-            charsList.append(Character(**char.attrib))
+            charsList.append(CharacterInfo(**char.attrib))
         return charsList
     
     def getAccountStatus(self):
         response = self.__api.getResponse('account/AccountStatus.xml.aspx', self.__apiKey)
-        return AccountStatus(**nodesListToDict(response))
+        return AccountStatusInfo(**nodesListToDict(response))
     
     def getApiKeyInfo(self):
         response = self.__api.getResponse('account/APIKeyInfo.xml.aspx ', self.__apiKey)
         chars = []
         for char in list(response.find('result/key/rowset')):
             char.attrib['name'] = char.attrib.pop('characterName') 
-            chars.append(Character(**char.attrib))
+            chars.append(CharacterInfo(**char.attrib))
         info = dict(response.find('result/key').attrib)
         info['characters'] = chars
         return ApiKeyInfo(**info)
@@ -104,8 +105,16 @@ class CharacterApi(object):
             isTraining = int(response.find('result/skillInTraining').text)
         except ValueError:
             raise ApiException(2000, "Unexpected value")
-        return SkillInTraining(**nodesListToDict(response)) if isTraining > 0 else None
-             
+        return SkillInTrainingInfo(**nodesListToDict(response)) if isTraining > 0 else None
+    
+    def getSkillQueue(self, characterID):
+        reqData = self.__apiKey._asdict()
+        reqData['characterID'] = characterID
+        response = self.__api.getResponse('char/SkillQueue.xml.aspx', reqData)
+        queue = []
+        for item in list(response.find('result/rowset')):
+            queue.append(SkillQueueItem(**item.attrib))
+        return sorted(queue, lambda x, y: cmp(int(x.queuePosition), int(y.queuePosition)))
     
 class ApiException(Exception):
     def __init__(self, code, message):

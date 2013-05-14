@@ -29,4 +29,9 @@ print sit
 sit = chrApi.getSkillInTraining(93315844)
 print sit
 
+queue = chrApi.getSkillQueue(1851172576)
+print queue
+queue = chrApi.getSkillQueue(93315844)
+print queue
+
 logging.shutdown()
