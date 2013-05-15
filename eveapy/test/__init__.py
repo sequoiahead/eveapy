@@ -1,4 +1,4 @@
-from apiKeys import apiKeys
+from resources import apiKeys
 from collections import namedtuple
 from eveapy.api import Api, AccountApi, CharacterApi
 from eveapy.cache import SmartCache
