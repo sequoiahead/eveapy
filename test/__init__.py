@@ -8,7 +8,7 @@ import os
 
 logging.basicConfig(level=logging.DEBUG)
 
-cache = SmartCache('./')
+cache = SmartCache('./resources/.cache')
 impl = Api(cache)
 acc = AccountApi(impl, apiKeys['full'])
 chrApi = CharacterApi(impl, apiKeys['full'])
